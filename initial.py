@@ -5,7 +5,7 @@ import numpy as np
 train = pd.read_csv("data/train.csv")
 test = pd.read_csv("data/test.csv")
 print(train.info())
-#print(test.info())
+print(train.describe())
 
 
 
@@ -17,6 +17,8 @@ print(train.info())
 # 5. Normalize/Standardize numerical data
 
 # might need to follow some of these steps on the testing set as well
+# WE MAY NEED TO COMBINE TRAIN AND TEST SETS SO THAT WHEN NORMALIZING/IMPUTING
+# DATA WE TREAT IT AS THE SAME AS THE TRAIN SET
 
 train['HomePlanet'].fillna(train['HomePlanet'].mode(), inplace=True)
 train['CryoSleep'].fillna(train['CryoSleep'].mode(), inplace=True)
@@ -47,10 +49,21 @@ from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder, LabelEncoder
 
 # gonna use the dummies method anyway
+#encoder = OneHotEncoder()
+#train = encoder.fit_transform(train)
 
-encoder = OneHotEncoder()
-train = encoder.fit_transform(train)
+train = pd.get_dummies(train, columns=['HomePlanet', 
+                                        'CryoSleep',
+                                        'cabin_prefix',
+                                        'cabin_suffix',
+                                        'passengerId_suffix',
+                                        'VIP',
+                                        'Destination'])
+
 
 
 # Normalizing/Standardizing the dataset
 from sklearn.preprocessing import StandardScaler, Normalizer
+scale = StandardScaler()
+temp = train.copy()
+temp_scaled = scale.fit_transform(temp[['Age','RoomService','FoodCourt','ShoppingMall','Spa','VRDeck']])
