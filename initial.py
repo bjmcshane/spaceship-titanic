@@ -43,8 +43,6 @@ all_data['VRDeck'].fillna(all_data['VRDeck'].mean(), inplace=True)
 
 
 #print(all_data['HomePlanet'].value_counts())
-print(all_data.info())
-print()
 
 
 
@@ -66,6 +64,7 @@ from sklearn.preprocessing import OneHotEncoder, LabelEncoder
 cont = ['Age', 'RoomService', 'FoodCourt','ShoppingMall','Spa','VRDeck']
 cat = [x for x in all_data.columns if x not in cont]
 cat.remove('Transported')
+cat.remove('train_test')
 #print(f'cont {cont}')
 #print(f'cat {cat}')
 
@@ -78,25 +77,38 @@ all_data_ohe = pd.get_dummies(all_data, columns=cat)
 
 
 # 5. Normalize/Standardize numerical data
-# split data again
-
-X_train = all_data[all_data.train_test == 0].drop(['train_test', 'Transported'], axis=1)
-X_test = all_data[all_data.train_test == 1].drop(['train_test'], axis=1)
-y_train = all_data[all_data.train_test == 0].Transported
-
-
-
 from sklearn.preprocessing import StandardScaler, Normalizer
 scale = StandardScaler()
-#temp = train.copy()
-#temp_scaled = scale.fit_transform(temp[['Age','RoomService','FoodCourt','ShoppingMall','Spa','VRDeck']])
-#train_ohe[cont]= scale.fit_transform(train_ohe[cont])
-
-#print(X_train.info())
-
-#print(train_ohe.info())
-#print(train_ohe.head())
+all_data_ohe_scaled = all_data_ohe.copy()
+all_data_ohe_scaled[cont] = scale.fit_transform(all_data_ohe_scaled[cont])
 
 
+# split data again
+X_train = all_data_ohe_scaled[all_data_ohe_scaled.train_test == 0].drop(['train_test', 'Transported'], axis=1)
+X_test = all_data_ohe_scaled[all_data_ohe_scaled.train_test == 1].drop(['train_test'], axis=1)
+y_train = all_data_ohe_scaled[all_data_ohe_scaled.train_test == 0].Transported
 
+
+from sklearn.model_selection import cross_val_score
+from sklearn.naive_bayes import GaussianNB
+from sklearn.linear_model import LogisticRegression
+from sklearn import tree
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.svm import SVC
+
+
+
+
+# Naive Bayes provides a good baseline for classification tasks
+nb = GaussianNB()
+#cv = cross_val_score(nb, X_train, y_train, cv=5)
+#print(cv)
+#print(cv.mean())
+
+
+lr = LogisticRegression(max_iter = 2000)
+cv = cross_val_score(lr, X_train, y_train, cv=5)
+print(cv)
+print(cv.mean())
 
