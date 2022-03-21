@@ -4,8 +4,16 @@ import numpy as np
 
 train = pd.read_csv("data/train.csv")
 test = pd.read_csv("data/test.csv")
-print(train.info())
-print(train.describe())
+train["train_test"] = 0
+test["train_test"] = 1
+
+#print(train['Transported'].value_counts())
+#print(train.info())
+
+all_data = pd.concat([train, test])
+
+
+
 
 
 
@@ -20,50 +28,75 @@ print(train.describe())
 # WE MAY NEED TO COMBINE TRAIN AND TEST SETS SO THAT WHEN NORMALIZING/IMPUTING
 # DATA WE TREAT IT AS THE SAME AS THE TRAIN SET
 
-train['HomePlanet'].fillna(train['HomePlanet'].mode(), inplace=True)
-train['CryoSleep'].fillna(train['CryoSleep'].mode(), inplace=True)
-train['Cabin'].fillna(train['Cabin'].mode(), inplace=True)
-train['Destination'].fillna(train['Destination'].mode(), inplace=True)
-train['Age'].fillna(train['Age'].mean(), inplace=True)
-train['VIP'].fillna(train['VIP'].mode(), inplace=True)
-train['RoomService'].fillna(train['RoomService'].mean(), inplace=True)
-train['FoodCourt'].fillna(train['FoodCourt'].mean(), inplace=True)
-train['ShoppingMall'].fillna(train['ShoppingMall'].mean(), inplace=True)
-train['Spa'].fillna(train['Spa'].mean(), inplace=True)
-train['VRDeck'].fillna(train['VRDeck'].mean(), inplace=True)
+# 1. drop/replace/impute null values
+#all_data['HomePlanet'].fillna(all_data['HomePlanet'].mode(), inplace=True)
+#all_data['CryoSleep'].fillna(all_data['CryoSleep'].mode(), inplace=True)
+#all_data['Cabin'].fillna(all_data['Cabin'].mode(), inplace=True)
+#all_data['Destination'].fillna(all_data['Destination'].mode(), inplace=True)
+all_data['Age'].fillna(all_data['Age'].mean(), inplace=True)
+#all_data['VIP'].fillna(all_data['VIP'].mode(), inplace=True)
+all_data['RoomService'].fillna(all_data['RoomService'].mean(), inplace=True)
+all_data['FoodCourt'].fillna(all_data['FoodCourt'].mean(), inplace=True)
+all_data['ShoppingMall'].fillna(all_data['ShoppingMall'].mean(), inplace=True)
+all_data['Spa'].fillna(all_data['Spa'].mean(), inplace=True)
+all_data['VRDeck'].fillna(all_data['VRDeck'].mean(), inplace=True)
 
 
-train['cabin_prefix'] = train.Cabin.apply(lambda x: 'na' if pd.isna(x) else x.split('/')[0])
-train['cabin_suffix'] = train.Cabin.apply(lambda x: 'na' if pd.isna(x) else x.split('/')[2])
-train['passengerId_suffix'] = train.PassengerId.apply(lambda x: 'na' if pd.isna(x) else x.split('_')[1])
+#print(all_data['HomePlanet'].value_counts())
+print(all_data.info())
+print()
 
 
 
 
+# 2. feature engineering
+all_data['cabin_prefix'] = all_data.Cabin.apply(lambda x: 'na' if pd.isna(x) else x.split('/')[0])
+all_data['cabin_suffix'] = all_data.Cabin.apply(lambda x: 'na' if pd.isna(x) else x.split('/')[2])
+all_data['passengerId_suffix'] = all_data.PassengerId.apply(lambda x: 'na' if pd.isna(x) else x.split('_')[1])
+
+
+# 3. drop any useless variables/columns like passengerId
 drops = ['PassengerId', 'Cabin', 'Name']
-train = train.drop(columns=drops)
+all_data = all_data.drop(columns=drops)
 
 
-# Encoding categorical data
+# 4. categorical transformations (like OneHotEncoding)
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder, LabelEncoder
+cont = ['Age', 'RoomService', 'FoodCourt','ShoppingMall','Spa','VRDeck']
+cat = [x for x in all_data.columns if x not in cont]
+cat.remove('Transported')
+#print(f'cont {cont}')
+#print(f'cat {cat}')
 
 # gonna use the dummies method anyway
 #encoder = OneHotEncoder()
 #train = encoder.fit_transform(train)
+# will also probably need to encode the labels
 
-train = pd.get_dummies(train, columns=['HomePlanet', 
-                                        'CryoSleep',
-                                        'cabin_prefix',
-                                        'cabin_suffix',
-                                        'passengerId_suffix',
-                                        'VIP',
-                                        'Destination'])
+all_data_ohe = pd.get_dummies(all_data, columns=cat)
 
 
+# 5. Normalize/Standardize numerical data
+# split data again
 
-# Normalizing/Standardizing the dataset
+X_train = all_data[all_data.train_test == 0].drop(['train_test', 'Transported'], axis=1)
+X_test = all_data[all_data.train_test == 1].drop(['train_test'], axis=1)
+y_train = all_data[all_data.train_test == 0].Transported
+
+
+
 from sklearn.preprocessing import StandardScaler, Normalizer
 scale = StandardScaler()
-temp = train.copy()
-temp_scaled = scale.fit_transform(temp[['Age','RoomService','FoodCourt','ShoppingMall','Spa','VRDeck']])
+#temp = train.copy()
+#temp_scaled = scale.fit_transform(temp[['Age','RoomService','FoodCourt','ShoppingMall','Spa','VRDeck']])
+#train_ohe[cont]= scale.fit_transform(train_ohe[cont])
+
+#print(X_train.info())
+
+#print(train_ohe.info())
+#print(train_ohe.head())
+
+
+
+
