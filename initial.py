@@ -88,27 +88,69 @@ X_train = all_data_ohe_scaled[all_data_ohe_scaled.train_test == 0].drop(['train_
 X_test = all_data_ohe_scaled[all_data_ohe_scaled.train_test == 1].drop(['train_test'], axis=1)
 y_train = all_data_ohe_scaled[all_data_ohe_scaled.train_test == 0].Transported
 
+encoder = LabelEncoder()
+y_train = encoder.fit_transform(y_train)
+
+
+
 
 from sklearn.model_selection import cross_val_score
-from sklearn.naive_bayes import GaussianNB
-from sklearn.linear_model import LogisticRegression
-from sklearn import tree
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.svm import SVC
-
-
-
-
+baseline_results = {}
 # Naive Bayes provides a good baseline for classification tasks
+# the reason these models weren't initially fitting was because y_train wasn't encoded to 1's and 0's
+# instead it was an array of falses and positives
+# 0 = False
+# 1 = True
+
+from sklearn.naive_bayes import GaussianNB
 nb = GaussianNB()
-#cv = cross_val_score(nb, X_train, y_train, cv=5)
-#print(cv)
-#print(cv.mean())
+cv = cross_val_score(nb, X_train, y_train, cv=5)
+baseline_results['Naive Bayes'] = cv.mean()
 
 
+from sklearn.linear_model import LogisticRegression
 lr = LogisticRegression(max_iter = 2000)
 cv = cross_val_score(lr, X_train, y_train, cv=5)
-print(cv)
-print(cv.mean())
+baseline_results['Logistic Regression'] = cv.mean()
 
+
+from sklearn import tree
+dt = tree.DecisionTreeClassifier(random_state=1)
+cv = cross_val_score(dt, X_train, y_train, cv=5)
+baseline_results['Decision Tree'] = cv.mean()
+
+
+from sklearn.neighbors import KNeighborsClassifier
+knn = KNeighborsClassifier()
+cv = cross_val_score(knn, X_train, y_train, cv=5)
+baseline_results['KNN'] = cv.mean()
+
+
+from sklearn.ensemble import RandomForestClassifier
+random_forest = RandomForestClassifier()
+cv = cross_val_score(random_forest, X_train, y_train, cv=5)
+baseline_results['random_forst'] = cv.mean()
+
+
+from sklearn.svm import SVC
+svc = SVC(probability=True)
+cv = cross_val_score(svc, X_train, y_train, cv=5)
+baseline_results['SVC'] = cv.mean()
+
+
+
+
+
+
+from sklearn.ensemble import VotingClassifier
+voting = VotingClassifier(estimators = [('lr',lr),
+                                        ('knn',knn),
+                                        ('rf',random_forest),
+                                        ('gnb',nb),
+                                        ('svc',svc)],
+                                        voting='soft')
+cv = cross_val_score(voting, X_train, y_train, cv=5)
+baseline_results['voting'] = cv.mean()
+
+
+print(baseline_results)
